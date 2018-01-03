@@ -1,0 +1,92 @@
+kernel void init(
+	global int * restrict v1,
+	global int * restrict v2,
+	int nels)
+{
+	int i = get_global_id(0);
+	if (i >= nels)
+		return;
+	v1[i] = i;
+	v2[i] = nels - i;
+}
+
+/* versione vettoriale di init con larghezza 4 */
+kernel void init4(
+	global int4 * restrict v1,
+	global int4 * restrict v2,
+	int nels) /* numero di elementi, assunto multiplo di 4 */
+{
+	int i = get_global_id(0);
+	if (i >= nels/4)
+		return;
+#if 0 /* vi boccio: */
+	v1[i] = (int4)(4*i, 4*i+1, 4*i+2 , 4*i+3);
+	v2[i] = (int4)(nels) - v1[i];
+#else
+	/* non è detto che non vi boccio: */
+	const int4 val = (int4)(4*i, 4*i+1, 4*i+2 , 4*i+3);
+	v1[i] = val;
+	v2[i] = (int4)(nels) - val;
+#endif
+}
+
+/* versione vettoriale di init con larghezza 16 */
+kernel void init16(
+	global int16 * restrict v1,
+	global int16 * restrict v2,
+	int nels)
+{
+	int i = get_global_id(0);
+	if (i >= nels/16)
+		return;
+#if 0 /* esplicito */
+	const int16 val = (int16)(16*i) +
+		(int16)(0, 1, 2, 3, 4, 5, 6, 7, 8,
+			9, 10, 11, 12, 13, 14, 15);
+#else
+	const int4 base4 = (int4)(0, 1, 2, 3);
+	const int8 base8 = (int8)(base4, base4 + 4);
+	const int16 val = (int16)(16*i) +
+		(int16)(base8, base8+8);
+#endif
+	v1[i] = val;
+	v2[i] = (int16)(nels) - val;
+}
+
+
+
+kernel void sum(
+	global int * restrict vsum,
+	global const int * restrict v1,
+	global const int * restrict v2,
+	int nels)
+{
+	int i = get_global_id(0);
+	if (i >= nels)
+		return;
+	vsum[i] = v1[i] + v2[i];
+}
+
+kernel void sum4(
+	global int4 * restrict vsum,
+	global const int4 * restrict v1,
+	global const int4 * restrict v2,
+	int nels)
+{
+	int i = get_global_id(0);
+	if (i >= nels/4)
+		return;
+	vsum[i] = v1[i] + v2[i];
+}
+
+kernel void sum16(
+	global int16 * restrict vsum,
+	global const int16 * restrict v1,
+	global const int16 * restrict v2,
+	int nels)
+{
+	int i = get_global_id(0);
+	if (i >= nels/16)
+		return;
+	vsum[i] = v1[i] + v2[i];
+}
